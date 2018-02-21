@@ -1,0 +1,5 @@
+package mychat.chatserver;
+
+public class DemoThreadWS {
+
+}

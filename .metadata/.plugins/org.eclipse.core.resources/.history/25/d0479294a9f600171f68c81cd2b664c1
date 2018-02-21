@@ -1,0 +1,24 @@
+package com.za.tutorial.websocket;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.websocket.OnClose;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+
+@ServerEndpoint(value="/chatServerEndpoint",encoders= {ChatMessageEncoder.class}, decoders= {ChatMessageDecoder.class})
+public class ChatServerEndpoint {
+	static Set<Session> chatroomUsers = Collections.synchronizedSet(new HashSet<Session>());
+	
+	@OnOpen
+	public void handleOpen(Session userSession) {
+		chatroomUsers.add(userSession);
+	}
+	@OnClose
+	public void handleClose(Session userSession) {
+		chatroomUsers.remove(userSession);
+	}
+}

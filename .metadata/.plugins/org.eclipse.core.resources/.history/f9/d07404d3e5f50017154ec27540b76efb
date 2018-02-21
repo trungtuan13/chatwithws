@@ -1,0 +1,43 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Chat Room</title>
+</head>
+<body>
+	<h3>${model.username }
+		| <a href="chat/logout" style="text-decoration: none">Logout</a>
+	</h3>
+		<table>
+		<tr><textarea rows="10" cols="45" disabled="disabled" id="frameChat"></textarea></tr>
+			<tr>
+				<td><input type="text" id="messageText" /></td>
+				<td><button onclick="sendMessage();">Send</button></td>
+			</tr>
+			
+		</table>
+</body>
+<script>
+	var websocket = new WebSocket("ws://localhost:8080/MyChatApp/mychatendpoint");
+	websocket.onopen = function(event){
+		alert('OnOpen Runned');
+	}
+	websocket.onmessage = function processMessage(message){
+		var jsonData = JSON.parse(message.data);
+		if(jsonData.system!=null){
+			frameChat.value += jsonData.system +"\n";
+		}else if(jsonData.message != null) frameChat.value += jsonData.message +"\n";
+	}
+	
+	function sendMessage(){
+		var message = $("#messageText").val();
+		websocket.send(message);
+		$("#messageText").val("");
+		console.log($("#messageText").val();)
+	}
+	
+</script>
+</html>

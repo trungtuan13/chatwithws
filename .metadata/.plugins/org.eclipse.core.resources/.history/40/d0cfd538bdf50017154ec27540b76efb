@@ -1,0 +1,8 @@
+package mychat.chatserver;
+
+import javax.websocket.server.ServerEndpoint;
+
+@ServerEndpoint("/demows")
+public class DemoThreadWS {
+
+}

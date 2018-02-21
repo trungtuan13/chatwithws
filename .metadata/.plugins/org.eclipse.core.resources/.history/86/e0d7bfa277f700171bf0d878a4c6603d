@@ -1,0 +1,131 @@
+package mychat.chatserver;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonWriter;
+import javax.servlet.http.HttpSession;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+
+@ServerEndpoint(value = "/mychatendpoint", configurator = GetHttpSessionConfigurator.class)
+public class MyChatServerEndPoint {
+	// cái này dùng để lưu tất cả session đã tham gia vào, khi có message sẽ gửi cho
+	// các session này
+	static Set<Session> chatSession = Collections.synchronizedSet(new HashSet<Session>());
+	static int count = 0;
+	private HttpSession httpSession;
+	private String username = "";
+
+	@OnOpen
+	public void openWS(Session userSession, EndpointConfig endPointConfig) throws IOException {
+		Iterator<Session> iterator = chatSession.iterator();
+		this.httpSession = (HttpSession) endPointConfig.getUserProperties().get(HttpSession.class.getName());
+		this.username = (String) this.httpSession.getAttribute("username");
+		// neu nguoi do da~ chat truoc do roi => show all message before
+		if (isUserJoinned(this.username)) {
+			System.out.println("user này đã vào trước đó");
+		} else {// neu chua vao room thi thong bao trong room la co nguoi moi vua vao
+			userSession.getUserProperties().put("username", this.username);
+			chatSession.add(userSession);
+			count++;
+			//print notification for all user joined chat, only welcome with userSession just join
+			while (iterator.hasNext()) {
+				Session otherUser = iterator.next();
+				if (otherUser != userSession) {
+					otherUser.getBasicRemote().sendText(buildJsonMessage("system", this.username + " joined chat!"));
+				}else {
+					userSession.getBasicRemote().sendText(buildJsonMessage("system", "Welcome you!"));
+				}
+				otherUser.getBasicRemote().sendText(buildArrayJsonUsers());
+			}
+		}
+	}
+
+	@OnMessage
+	public void messageProcess(String message) throws IOException {
+		Iterator<Session> iterator = chatSession.iterator();
+		while (iterator.hasNext()) {
+			iterator.next().getBasicRemote().sendText(buildJsonMessage(this.username, message));
+		}
+	}
+
+	@OnClose
+	public void closeWS(Session userSession) throws IOException {
+		chatSession.remove(userSession);
+		Iterator<Session> iterator = chatSession.iterator();
+		while(iterator.hasNext()) {
+			Session otherSession = iterator.next();
+			otherSession.getBasicRemote().sendText(buildJsonMessage("system", this.username+ " has left room chat"));
+			otherSession.getBasicRemote().sendText(buildArrayJsonUsers());
+		}
+	}
+
+	private String buildJsonMessage(String username, String message) {
+		// check type message build
+		// system
+		if (username.equals("system")) {
+			JsonObject jsonObject = Json.createObjectBuilder().add("system", message).build();
+			StringWriter stringWriter = new StringWriter();
+			try (JsonWriter jsonWriter = Json.createWriter(stringWriter)) {
+				jsonWriter.write(jsonObject);
+			}
+			System.out.println(stringWriter.toString());
+			return stringWriter.toString();
+		} else {// client send message
+			JsonObject jsonObject = Json.createObjectBuilder().add("message", username + ": " + message).build();
+			StringWriter stringWriter = new StringWriter();
+			try (JsonWriter jsonWriter = Json.createWriter(stringWriter)) {
+				jsonWriter.write(jsonObject);
+			}
+			System.out.println(stringWriter.toString());
+			return stringWriter.toString();
+		}
+	}
+	//for view user joining chat
+	private String buildCountJson(int count) {
+		JsonObject jsonObject = Json.createObjectBuilder().add("count", count).build();
+		StringWriter stringWriter = new StringWriter();
+		try (JsonWriter jsonWriter = Json.createWriter(stringWriter)) {
+			jsonWriter.write(jsonObject);
+		}
+		return stringWriter.toString();
+	}
+	//check username not join yet ?
+	private boolean isUserJoinned(String username) {
+		Iterator<Session> iterator = chatSession.iterator();
+		while (iterator.hasNext()) {
+			if (iterator.next().getUserProperties().get("username").equals(username))
+				return true;
+		}
+		return false;
+	}
+	private String buildArrayJsonUsers() {
+		Iterator<String> iterAllUsernames = getUsernames().iterator();
+		JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+		while(iterAllUsernames.hasNext()) {
+			jsonArrayBuilder.add((String)iterAllUsernames.next());
+		}
+		return Json.createObjectBuilder().add("users", jsonArrayBuilder).build().toString();
+	}
+	private Set<String> getUsernames(){
+		Iterator<Session> iterator =  chatSession.iterator();
+		Set<String> setUsernames = new HashSet<String>();
+		while(iterator.hasNext()) {
+			Object username = iterator.next().getUserProperties().get("username");
+			if(username!=null) setUsernames.add(username.toString());
+		}
+		return setUsernames;
+	}
+}

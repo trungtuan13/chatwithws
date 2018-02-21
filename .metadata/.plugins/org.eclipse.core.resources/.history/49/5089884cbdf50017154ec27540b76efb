@@ -1,0 +1,20 @@
+package mychat.chatserver;
+
+import javax.websocket.OnClose;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.server.ServerEndpoint;
+
+@ServerEndpoint("/demows")
+public class DemoThreadWS {	
+	
+	@OnOpen
+	public void openWS() {
+		System.out.println("Open websocket");
+	}
+	@OnMessage
+	public void messageWS() {
+		System.out.println("message websocket");
+	}
+
+}

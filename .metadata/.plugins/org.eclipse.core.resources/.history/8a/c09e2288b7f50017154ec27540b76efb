@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>My Chat room</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript">
+	var websocket = new WebSocket("ws://localhost:8080/ChatWebSocket/chatroomServerEndpoint");
+	websocket.onmessage = function processMessage(message){
+		var jsonData = JSON.parse(message.data);
+		if(jsonData.message != null) messagesTextArea.value += jsonData.message +"\n";
+	}
+	function sendMessage(){
+		websocket.send(messageText.value);
+		messageText.value ="";
+	}
+</script>
+</head>
+<body>
+<textarea rows="10" cols="45" id="messagesTextArea" readonly="readonly"></textarea>
+<input type="text" id="messageText" size="50" /><button onclick="sendMessage();">Send</button>
+</body>
+</html>

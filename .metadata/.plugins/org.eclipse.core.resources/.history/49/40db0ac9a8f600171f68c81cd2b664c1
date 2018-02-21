@@ -1,0 +1,8 @@
+package com.za.tutorial.websocket;
+
+import javax.websocket.server.ServerEndpoint;
+
+@ServerEndpoint(value="/chatServerEndpoint",encoders= {ChatMessageEncoder.class}, decoders= {ChatMessageDecoder.class})
+public class ChatServerEndpoint {
+
+}
